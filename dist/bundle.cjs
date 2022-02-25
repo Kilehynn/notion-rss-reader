@@ -115367,7 +115367,7 @@ var getNewFeedItems = async (feedUrl) => {
         return false;
       const publishedDate = new Date(pubDate).getTime() / 1e3;
       const { diffInHours } = timeDifference(publishedDate);
-      return diffInHours === 0;
+      return diffInHours < 24;
     });
   } catch (error) {
     console.warn("Failed to parse " + feedUrl, error);
@@ -115391,10 +115391,21 @@ var getFeedUrlList = async () => {
 // src/addFeedItems.ts
 var import_client2 = __toESM(require_src(), 1);
 var import_ogp_parser = __toESM(require_main(), 1);
+async function is_already_present_in_db(notion, database_id, article_url) {
+  notion.databases.query({
+    database_id,
+    filter: {
+      property: "URL",
+      url: {
+        equals: article_url
+      }
+    }
+  });
+}
 var addFeedItems = async (newFeedItems) => {
   const notion = new import_client2.Client({ auth: process.env.NOTION_KEY });
   const databaseId = process.env.NOTION_READER_DATABASE_ID || "";
-  newFeedItems.forEach(async (item) => {
+  newFeedItems.filter(async (elt) => await is_already_present_in_db(notion, databaseId, elt.link)).forEach(async (item) => {
     const { title, link, enclosure, pubDate } = item;
     const domain = link?.match(/^https?:\/{2,}(.*?)(?:\/|\?|#|$)/);
     const properties = {
