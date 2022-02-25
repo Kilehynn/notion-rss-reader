@@ -33,7 +33,7 @@ export const addFeedItems = async (
 
   newFeedItems.forEach(async (item) => {
     const { title, link, enclosure, pubDate } = item
-    if (await is_already_present_in_db(notion, databaseId, elt.link)) {
+    if (await is_already_present_in_db(notion, databaseId, link)) {
       return
     }
     // TODO rm
