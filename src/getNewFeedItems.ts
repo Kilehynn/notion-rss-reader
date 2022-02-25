@@ -18,7 +18,7 @@ export const getNewFeedItems = async (feedUrl: string) => {
     })
   } catch (error) {
     console.warn('Failed to parse ' + feedUrl, error)
-    console.log('::warning:: Failed to parse feed ' + feedUrl)
+    console.log(`::warning:: Failed to parse feed '${feedUrl}'`)
     return null
   }
 }
