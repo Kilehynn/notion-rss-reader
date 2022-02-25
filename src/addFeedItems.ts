@@ -19,7 +19,6 @@ async function is_already_present_in_db(
       },
     },
   })
-  console.log(article_url, response.results.length, response.results)
   return response.results.length > 0
 }
 
@@ -36,8 +35,6 @@ export const addFeedItems = async (
     if (await is_already_present_in_db(notion, databaseId, link)) {
       return
     }
-    // TODO rm
-    console.log('Would add' + link)
     const domain = link?.match(/^https?:\/{2,}(.*?)(?:\/|\?|#|$)/)
 
     const properties: TODO = {
@@ -103,11 +100,11 @@ export const addFeedItems = async (
       : []
 
     try {
-      /*await notion.pages.create({
+      await notion.pages.create({
         parent: { database_id: databaseId },
         properties,
         children,
-      })*/
+      })
     } catch (error) {
       console.error(error)
     }
