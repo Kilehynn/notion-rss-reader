@@ -86000,14 +86000,14 @@ var require_hebrewprober = __commonJS({
     var CharSetProber = require_charsetprober();
     var constants = require_constants();
     if (!Array.prototype.indexOf) {
-      Array.prototype.indexOf = function(elt2) {
+      Array.prototype.indexOf = function(elt) {
         var len = this.length >>> 0;
         var from = Number(arguments[1]) || 0;
         from = from < 0 ? Math.ceil(from) : Math.floor(from);
         if (from < 0)
           from += len;
         for (; from < len; from++) {
-          if (from in this && this[from] === elt2)
+          if (from in this && this[from] === elt)
             return from;
         }
         return -1;
@@ -115409,7 +115409,7 @@ var addFeedItems = async (newFeedItems) => {
   const databaseId = process.env.NOTION_READER_DATABASE_ID || "";
   newFeedItems.forEach(async (item) => {
     const { title, link, enclosure, pubDate } = item;
-    if (await is_already_present_in_db(notion, databaseId, elt.link)) {
+    if (await is_already_present_in_db(notion, databaseId, link)) {
       return;
     }
     console.log("Would add" + link);
