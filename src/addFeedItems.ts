@@ -105,6 +105,7 @@ export const addFeedItems = async (
         properties,
         children,
       })
+      console.log(`Added [${domain ? domain[1] : '?'}] ${title} (${link})`)
     } catch (error) {
       console.error(error)
     }
