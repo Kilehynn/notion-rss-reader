@@ -109851,15 +109851,21 @@ var timeDifference = (publishedDate) => {
 // src/getNewFeedItems.ts
 var parser = new import_rss_parser.default();
 var getNewFeedItems = async (feedUrl) => {
-  const { items: newFeedItems } = await parser.parseURL(feedUrl);
-  return newFeedItems.filter((feedItem) => {
-    const { pubDate } = feedItem;
-    if (!pubDate)
-      return false;
-    const publishedDate = new Date(pubDate).getTime() / 1e3;
-    const { diffInHours } = timeDifference(publishedDate);
-    return diffInHours === 0;
-  });
+  try {
+    const { items: newFeedItems } = await parser.parseURL(feedUrl);
+    return newFeedItems.filter((feedItem) => {
+      const { pubDate } = feedItem;
+      if (!pubDate)
+        return false;
+      const publishedDate = new Date(pubDate).getTime() / 1e3;
+      const { diffInHours } = timeDifference(publishedDate);
+      return diffInHours === 0;
+    });
+  } catch (error) {
+    console.warn("Failed to parse " + feedUrl, error);
+    console.log(`::warning:: Failed to parse feed '${feedUrl}'`);
+    return null;
+  }
 };
 
 // src/getFeedUrlList.ts
@@ -109957,9 +109963,11 @@ async function index() {
     if (feedUrl) {
       try {
         const newFeedItems = await getNewFeedItems(feedUrl);
-        await addFeedItems(newFeedItems);
+        if (newFeedItems != null)
+          await addFeedItems(newFeedItems);
       } catch (error) {
-        console.error(error);
+        console.error("Unexpected error", error);
+        process.exit(1);
       }
     }
   });
