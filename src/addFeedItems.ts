@@ -5,7 +5,7 @@ import ogp from 'ogp-parser'
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type TODO = any
 
-async function is_not_present_in_db(
+async function is_already_present_in_db(
   notion: Client,
   database_id: string,
   article_url: string
@@ -20,7 +20,7 @@ async function is_not_present_in_db(
     },
   })
   console.log(article_url, response.results.length, response.results)
-  return response.results.length == 0
+  return response.results.length > 0
 }
 
 export const addFeedItems = async (
@@ -31,86 +31,85 @@ export const addFeedItems = async (
   const notion = new Client({ auth: process.env.NOTION_KEY })
   const databaseId = process.env.NOTION_READER_DATABASE_ID || ''
 
-  newFeedItems
-    .filter(
-      async (elt) => await is_not_present_in_db(notion, databaseId, elt.link)
-    )
-    .forEach(async (item) => {
-      const { title, link, enclosure, pubDate } = item
-      // TODO rm
-      console.log('Would add' + link)
-      const domain = link?.match(/^https?:\/{2,}(.*?)(?:\/|\?|#|$)/)
+  newFeedItems.forEach(async (item) => {
+    const { title, link, enclosure, pubDate } = item
+    if (await is_already_present_in_db(notion, databaseId, elt.link)) {
+      return
+    }
+    // TODO rm
+    console.log('Would add' + link)
+    const domain = link?.match(/^https?:\/{2,}(.*?)(?:\/|\?|#|$)/)
 
-      const properties: TODO = {
-        Title: {
-          title: [
-            {
-              text: {
-                content: title,
-              },
+    const properties: TODO = {
+      Title: {
+        title: [
+          {
+            text: {
+              content: title,
             },
-          ],
-        },
-        URL: {
-          url: link,
-        },
-        Domain: {
-          select: {
-            name: domain ? domain[1] : null,
           },
+        ],
+      },
+      URL: {
+        url: link,
+      },
+      Domain: {
+        select: {
+          name: domain ? domain[1] : null,
         },
-        'Created At': {
-          rich_text: [
-            {
-              text: {
-                content: pubDate,
+      },
+      'Created At': {
+        rich_text: [
+          {
+            text: {
+              content: pubDate,
+            },
+          },
+        ],
+      },
+    }
+
+    const ogpImage = link
+      ? await ogp(link).then((data) => {
+          const imageList = data.ogp['og:image']
+          return imageList ? imageList[0] : null
+        })
+      : ''
+
+    const children: CreatePageParameters['children'] = enclosure
+      ? [
+          {
+            type: 'image',
+            image: {
+              type: 'external',
+              external: {
+                url: enclosure?.url,
               },
             },
-          ],
-        },
-      }
-
-      const ogpImage = link
-        ? await ogp(link).then((data) => {
-            const imageList = data.ogp['og:image']
-            return imageList ? imageList[0] : null
-          })
-        : ''
-
-      const children: CreatePageParameters['children'] = enclosure
-        ? [
-            {
-              type: 'image',
-              image: {
-                type: 'external',
-                external: {
-                  url: enclosure?.url,
-                },
+          },
+        ]
+      : ogpImage
+      ? [
+          {
+            type: 'image',
+            image: {
+              type: 'external',
+              external: {
+                url: ogpImage,
               },
             },
-          ]
-        : ogpImage
-        ? [
-            {
-              type: 'image',
-              image: {
-                type: 'external',
-                external: {
-                  url: ogpImage,
-                },
-              },
-            },
-          ]
-        : []
+          },
+        ]
+      : []
 
-      try {
-        /*await notion.pages.create({
-          parent: { database_id: databaseId },
-          properties,
-          children,
-        })*/
-      } catch (error) {
-        console.error(error)
-      }
-    })
+    try {
+      /*await notion.pages.create({
+        parent: { database_id: databaseId },
+        properties,
+        children,
+      })*/
+    } catch (error) {
+      console.error(error)
+    }
+  })
 }
