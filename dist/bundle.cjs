@@ -115392,7 +115392,7 @@ var getFeedUrlList = async () => {
 var import_client2 = __toESM(require_src(), 1);
 var import_ogp_parser = __toESM(require_main(), 1);
 async function is_already_present_in_db(notion, database_id, article_url) {
-  notion.databases.query({
+  const response = await notion.databases.query({
     database_id,
     filter: {
       property: "URL",
@@ -115401,11 +115401,12 @@ async function is_already_present_in_db(notion, database_id, article_url) {
       }
     }
   });
+  return response.results.length > 0;
 }
 var addFeedItems = async (newFeedItems) => {
   const notion = new import_client2.Client({ auth: process.env.NOTION_KEY });
   const databaseId = process.env.NOTION_READER_DATABASE_ID || "";
-  newFeedItems.filter(async (elt) => await is_already_present_in_db(notion, databaseId, elt.link)).forEach(async (item) => {
+  newFeedItems.filter(async (elt) => !await is_already_present_in_db(notion, databaseId, elt.link)).forEach(async (item) => {
     const { title, link, enclosure, pubDate } = item;
     const domain = link?.match(/^https?:\/{2,}(.*?)(?:\/|\?|#|$)/);
     const properties = {
