@@ -115401,7 +115401,6 @@ async function is_already_present_in_db(notion, database_id, article_url) {
       }
     }
   });
-  console.log(article_url, response.results.length, response.results);
   return response.results.length > 0;
 }
 var addFeedItems = async (newFeedItems) => {
@@ -115412,7 +115411,6 @@ var addFeedItems = async (newFeedItems) => {
     if (await is_already_present_in_db(notion, databaseId, link)) {
       return;
     }
-    console.log("Would add" + link);
     const domain = link?.match(/^https?:\/{2,}(.*?)(?:\/|\?|#|$)/);
     const properties = {
       Title: {
@@ -115468,6 +115466,11 @@ var addFeedItems = async (newFeedItems) => {
       }
     ] : [];
     try {
+      await notion.pages.create({
+        parent: { database_id: databaseId },
+        properties,
+        children: children2
+      });
     } catch (error) {
       console.error(error);
     }
