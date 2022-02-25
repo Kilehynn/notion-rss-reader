@@ -10,7 +10,7 @@ async function is_already_present_in_db(
   database_id: string,
   article_url: string
 ): Promise<boolean> {
-  notion.databases.query({
+  const response = await notion.databases.query({
     database_id: database_id,
     filter: {
       property: 'URL',
@@ -19,6 +19,7 @@ async function is_already_present_in_db(
       },
     },
   })
+  return response.results.length > 0
 }
 
 export const addFeedItems = async (
@@ -32,7 +33,7 @@ export const addFeedItems = async (
   newFeedItems
     .filter(
       async (elt) =>
-        await is_already_present_in_db(notion, databaseId, elt.link)
+        !(await is_already_present_in_db(notion, databaseId, elt.link))
     )
     .forEach(async (item) => {
       const { title, link, enclosure, pubDate } = item
