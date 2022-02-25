@@ -5,6 +5,22 @@ import ogp from 'ogp-parser'
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type TODO = any
 
+async function is_already_present_in_db(
+  notion: Client,
+  database_id: string,
+  article_url: string
+): Promise<boolean> {
+  notion.databases.query({
+    database_id: database_id,
+    filter: {
+      property: 'URL',
+      url: {
+        equals: article_url,
+      },
+    },
+  })
+}
+
 export const addFeedItems = async (
   newFeedItems: {
     [key: string]: TODO
@@ -13,80 +29,85 @@ export const addFeedItems = async (
   const notion = new Client({ auth: process.env.NOTION_KEY })
   const databaseId = process.env.NOTION_READER_DATABASE_ID || ''
 
-  newFeedItems.forEach(async (item) => {
-    const { title, link, enclosure, pubDate } = item
-    const domain = link?.match(/^https?:\/{2,}(.*?)(?:\/|\?|#|$)/)
+  newFeedItems
+    .filter(
+      async (elt) =>
+        await is_already_present_in_db(notion, databaseId, elt.link)
+    )
+    .forEach(async (item) => {
+      const { title, link, enclosure, pubDate } = item
+      const domain = link?.match(/^https?:\/{2,}(.*?)(?:\/|\?|#|$)/)
 
-    const properties: TODO = {
-      Title: {
-        title: [
-          {
-            text: {
-              content: title,
+      const properties: TODO = {
+        Title: {
+          title: [
+            {
+              text: {
+                content: title,
+              },
             },
-          },
-        ],
-      },
-      URL: {
-        url: link,
-      },
-      Domain: {
-        select: {
-          name: domain ? domain[1] : null,
+          ],
         },
-      },
-      'Created At': {
-        rich_text: [
-          {
-            text: {
-              content: pubDate,
-            },
+        URL: {
+          url: link,
+        },
+        Domain: {
+          select: {
+            name: domain ? domain[1] : null,
           },
-        ],
-      },
-    }
+        },
+        'Created At': {
+          rich_text: [
+            {
+              text: {
+                content: pubDate,
+              },
+            },
+          ],
+        },
+      }
 
-    const ogpImage = link
-      ? await ogp(link).then((data) => {
-          const imageList = data.ogp['og:image']
-          return imageList ? imageList[0] : null
+      const ogpImage = link
+        ? await ogp(link).then((data) => {
+            const imageList = data.ogp['og:image']
+            return imageList ? imageList[0] : null
+          })
+        : ''
+
+      const children: CreatePageParameters['children'] = enclosure
+        ? [
+            {
+              type: 'image',
+              image: {
+                type: 'external',
+                external: {
+                  url: enclosure?.url,
+                },
+              },
+            },
+          ]
+        : ogpImage
+        ? [
+            {
+              type: 'image',
+              image: {
+                type: 'external',
+                external: {
+                  url: ogpImage,
+                },
+              },
+            },
+          ]
+        : []
+
+      try {
+        await notion.pages.create({
+          parent: { database_id: databaseId },
+          properties,
+          children,
         })
-      : ''
-
-    const children: CreatePageParameters['children'] = enclosure
-      ? [
-          {
-            type: 'image',
-            image: {
-              type: 'external',
-              external: {
-                url: enclosure?.url,
-              },
-            },
-          },
-        ]
-      : ogpImage
-      ? [
-          {
-            type: 'image',
-            image: {
-              type: 'external',
-              external: {
-                url: ogpImage,
-              },
-            },
-          },
-        ]
-      : []
-
-    try {
-      await notion.pages.create({
-        parent: { database_id: databaseId },
-        properties,
-        children,
-      })
-    } catch (error) {
-      console.error(error)
-    }
-  })
+      } catch (error) {
+        console.error(error)
+      }
+    })
 }

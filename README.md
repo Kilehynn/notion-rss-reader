@@ -6,5 +6,6 @@ No support is provided on this fork.
 
 Notable changes from upstream:
 
-- Uses node v17
 - Warnings in GHA CI
+- Properly reports HTTP errors
+- Instead of only grabbing results from the last hour, grab them from the last 24 hours and ensure there are no duplicates by just checking if the URL was already recorded in the db.
