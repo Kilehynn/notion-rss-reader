@@ -19,6 +19,8 @@ async function is_already_present_in_db(
       },
     },
   })
+  // TODO remove
+  console.log(article_url, response.results.length, response.results)
   return response.results.length > 0
 }
 
@@ -102,11 +104,11 @@ export const addFeedItems = async (
         : []
 
       try {
-        await notion.pages.create({
+        /*await notion.pages.create({
           parent: { database_id: databaseId },
           properties,
           children,
-        })
+        })*/
       } catch (error) {
         console.error(error)
       }
