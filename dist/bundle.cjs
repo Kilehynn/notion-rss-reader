@@ -115471,6 +115471,7 @@ var addFeedItems = async (newFeedItems) => {
         properties,
         children: children2
       });
+      console.log(`Added [${domain ? domain[1] : "?"}] ${title} (${link})`);
     } catch (error) {
       console.error(error);
     }
